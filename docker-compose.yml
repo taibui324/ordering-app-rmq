@@ -12,6 +12,9 @@ services:
       - mongodb-primary
       - mongodb-secondary
       - mongodb-arbiter
+      - billing 
+      - auth 
+      - rabbitmq
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
@@ -34,9 +37,35 @@ services:
       - mongodb-primary
       - mongodb-secondary
       - mongodb-arbiter
+      - rabbitmq 
+      - auth
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
+    logging:
+      options:
+       max-file: "10"
+       max-size: 10m
+
+  auth:
+    build:
+      context: . 
+      dockerfile: ./apps/auth/Dockerfile
+      target: development
+    command: npm run start:dev billing
+    env_file:
+      - ./apps/auth/.env
+    depends_on:
+      - mongodb-primary
+      - mongodb-secondary
+      - mongodb-arbiter
+      - rabbitmq
+    ports:
+      - '3001:3001'
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
   rabbitmq:
     image: rabbitmq
     ports: 
@@ -71,7 +100,7 @@ services:
       - mongodb-primary
     environment:
       - MONGODB_ADVERTISED_HOSTNAME=mongodb-arbiter
-      - MONGODB_REPLICA_SET_MODE=arbiter
+      - MONGODB_REPLICA_SET_MODE=arbiter 
       - MONGODB_INITIAL_PRIMARY_HOST=mongodb-primary
       - MONGODB_INITIAL_PRIMARY_ROOT_PASSWORD=password123
       - MONGODB_REPLICA_SET_KEY=replicasetkey123
